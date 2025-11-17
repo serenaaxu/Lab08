@@ -1,5 +1,4 @@
 from database.impianto_DAO import ImpiantoDAO
-
 '''
     MODELLO:
     - Rappresenta la struttura dati
@@ -26,6 +25,24 @@ class Model:
         :return: lista di tuple --> (nome dell'impianto, media), es. (Impianto A, 123)
         """
         # TODO
+        result = []
+        if self._impianti is None:
+            return []
+
+        for impianto in self._impianti:
+            lista_consumi = impianto.get_consumi()
+            consumi_mese = [
+                c.kwh for c in lista_consumi
+                if c.data.month == mese
+            ]
+
+            if consumi_mese:
+                media = sum(consumi_mese) / len(consumi_mese)
+            else:
+                media = 0
+            result.append((impianto.nome, media))
+        return result
+
 
     def get_sequenza_ottima(self, mese:int):
         """
@@ -47,6 +64,26 @@ class Model:
     def __ricorsione(self, sequenza_parziale, giorno, ultimo_impianto, costo_corrente, consumi_settimana):
         """ Implementa la ricorsione """
         # TODO
+        # Caso terminale
+        if giorno == 8:
+            if self.__costo_ottimo == -1 or costo_corrente < self.__costo_ottimo:
+                self.__costo_ottimo = costo_corrente
+                self.__sequenza_ottima = sequenza_parziale.copy()
+            return
+
+        if self.__costo_ottimo != -1 and costo_corrente >= self.__costo_ottimo:
+            return
+
+        # Caso ricorsivo
+        for impianto in self._impianti:
+            costo_spostamento = 0
+            if ultimo_impianto is not None and impianto.id != ultimo_impianto:
+                costo_spostamento = 5
+            costo_energia = consumi_settimana[impianto.id][giorno-1]
+
+            # CONTINUARE DA QUI
+
+
 
     def __get_consumi_prima_settimana_mese(self, mese: int):
         """
