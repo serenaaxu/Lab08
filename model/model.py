@@ -30,12 +30,15 @@ class Model:
             return []
 
         for impianto in self._impianti:
+            # carica i consumi
             lista_consumi = impianto.get_consumi()
+            # filtra consumi per il mese
             consumi_mese = [
                 c.kwh for c in lista_consumi
                 if c.data.month == mese
             ]
 
+            # calcolo della media
             if consumi_mese:
                 media = sum(consumi_mese) / len(consumi_mese)
             else:
@@ -65,24 +68,40 @@ class Model:
         """ Implementa la ricorsione """
         # TODO
         # Caso terminale
+        # se sta per iniziare il giorno 8 la settimana è terminata, non occorre continuare
         if giorno == 8:
             if self.__costo_ottimo == -1 or costo_corrente < self.__costo_ottimo:
                 self.__costo_ottimo = costo_corrente
                 self.__sequenza_ottima = sequenza_parziale.copy()
             return
 
+        # se il costo corrente è già peggiore di quello ottimo inutile continuare
         if self.__costo_ottimo != -1 and costo_corrente >= self.__costo_ottimo:
             return
 
         # Caso ricorsivo
+        # prova a visitare entrambi gli impianti
         for impianto in self._impianti:
+            # calcolo costo spostamento
             costo_spostamento = 0
             if ultimo_impianto is not None and impianto.id != ultimo_impianto:
                 costo_spostamento = 5
+            # costo energetico
             costo_energia = consumi_settimana[impianto.id][giorno-1]
 
-            # CONTINUARE DA QUI
+            costo_totale_scelta = costo_energia + costo_spostamento
 
+            # aggiunge scelta al percorso
+            sequenza_parziale.append(impianto.id)
+            self.__ricorsione(
+                sequenza_parziale,
+                giorno + 1,                # passa alla giornata successiva
+                impianto.id,               # ultimo impianto visitato
+                costo_corrente + costo_totale_scelta,
+                consumi_settimana
+            )
+            # rimuove la scelta per provare l'altro impianto
+            sequenza_parziale.pop()
 
 
     def __get_consumi_prima_settimana_mese(self, mese: int):
@@ -91,4 +110,28 @@ class Model:
         :return: un dizionario: {id_impianto: [kwh_giorno1, ..., kwh_giorno7]}
         """
         # TODO
+        dati_settimana = {}
+
+        if not self._impianti:
+            return {}
+
+        for impianto in self._impianti:
+            lista_consumi = impianto.get_consumi()
+
+            # filtra consumi per mese e giorno
+            consumi_validi = []
+            for c in lista_consumi:
+                if c.data.month == mese and 1 <= c.data.day <= 7:
+                    consumi_validi.append(c)
+
+            # ordina per giorno
+            consumi_ordinati = sorted(consumi_validi, key=lambda c: c.data.day)
+
+            # estrae solo i kwh
+            lista_kwh = [c.kwh for c in consumi_ordinati]
+
+            dati_settimana[impianto.id] = lista_kwh
+        return dati_settimana
+
+
 
